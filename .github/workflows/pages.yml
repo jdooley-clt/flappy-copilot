@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: jdooley-clt/arcade
-          ref: 18b9d013a9591c9d97348f21023f875eb2a7630b
+          ref: cdbd39c365f5daf50f47d06d10644d61d1572aaf
           path: .cache/cabinet
           persist-credentials: false
       - run: npm ci
