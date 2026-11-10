@@ -29,7 +29,7 @@ jobs:
           cache: npm
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          repository: filmgirl/arcade
+          repository: jdooley-clt/arcade
           ref: 18b9d013a9591c9d97348f21023f875eb2a7630b
           path: .cache/cabinet
           persist-credentials: false
@@ -47,7 +47,7 @@ jobs:
             test-results/
           retention-days: 7
       - name: Package the exact tested site
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.repository == 'filmgirl/flappy-copilot'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.repository == 'jdooley-clt/flappy-copilot'
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: dist
@@ -55,7 +55,7 @@ jobs:
   deploy:
     name: Deploy tested candidate
     needs: compatibility
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.repository == 'filmgirl/flappy-copilot'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.repository == 'jdooley-clt/flappy-copilot'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

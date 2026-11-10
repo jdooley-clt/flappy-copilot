@@ -1,7 +1,7 @@
 import { test, expect, canvasFits } from './helpers.js';
 
 const candidate = '/flappy-copilot/';
-const arcadeUrl = 'https://filmgirl.github.io/arcade/';
+const arcadeUrl = 'https://jdooley-clt.github.io/arcade/';
 
 test.beforeEach(async ({ page }) => {
   await page.goto(candidate);
