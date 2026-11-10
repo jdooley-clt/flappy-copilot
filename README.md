@@ -6,15 +6,10 @@ A retro terminal-style Flappy Bird game — GitHub Copilot themed.
 
 **More games:** [GitHub Arcade](https://jdooley-clt.github.io/arcade/)
 
-**Origins:** Flappy Copilot was created by Christina Warren
-([@filmgirl](https://github.com/filmgirl)) at
-[filmgirl/flappy-copilot](https://github.com/filmgirl/flappy-copilot). This
-repository is a full-history copy of her project.
-
-**Maintainer:** [@jdooley-clt](https://github.com/jdooley-clt) maintains this copy
-and its GitHub Pages deployment. Christina's existing credits, including the MIT
-license copyright, stay exactly as they are; only work going forward is attributed
-to the maintainers here.
+Created by Christina Warren ([@filmgirl](https://github.com/filmgirl)), currently
+maintained by Jeramiah Dooley ([@jdooley-clt](https://github.com/jdooley-clt)).
+Original repository:
+[filmgirl/flappy-copilot](https://github.com/filmgirl/flappy-copilot).
 
 ## Controls
 - `SPACE` / click / tap — flap
