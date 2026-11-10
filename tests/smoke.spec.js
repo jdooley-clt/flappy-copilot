@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { test, expect, readyGame, startWithSpace, canvasFits } from './helpers.js';
 
-const gameUrl = 'https://filmgirl.github.io/flappy-copilot/';
-const cabinetUrl = 'https://filmgirl.github.io/arcade/#game/flappy-copilot';
+const gameUrl = 'https://jdooley-clt.github.io/flappy-copilot/';
+const cabinetUrl = 'https://jdooley-clt.github.io/arcade/#game/flappy-copilot';
 
 test('published game and real cabinet are playable', async ({ page, request }) => {
   let candidate;

@@ -2,9 +2,19 @@
 
 A retro terminal-style Flappy Bird game — GitHub Copilot themed.
 
-**Play:** https://filmgirl.github.io/flappy-copilot/
+**Play:** https://jdooley-clt.github.io/flappy-copilot/
 
-**More games:** [GitHub Arcade](https://filmgirl.github.io/arcade/)
+**More games:** [GitHub Arcade](https://jdooley-clt.github.io/arcade/)
+
+**Origins:** Flappy Copilot was created by Christina Warren
+([@filmgirl](https://github.com/filmgirl)) at
+[filmgirl/flappy-copilot](https://github.com/filmgirl/flappy-copilot). This
+repository is a full-history copy of her project.
+
+**Maintainer:** [@jdooley-clt](https://github.com/jdooley-clt) maintains this copy
+and its GitHub Pages deployment. Christina's existing credits, including the MIT
+license copyright, stay exactly as they are; only work going forward is attributed
+to the maintainers here.
 
 ## Controls
 - `SPACE` / click / tap — flap
@@ -31,7 +41,7 @@ On Linux, install browser OS dependencies with
 Rebuild after changing the game: tests deliberately serve **`dist/`, not the
 source file or the already-published game**.
 
-The harness mounts the real [Commit Cabinet](https://github.com/filmgirl/arcade)
+The harness mounts the real [Commit Cabinet](https://github.com/jdooley-clt/arcade)
 at `/arcade/` and the candidate at `/flappy-copilot/` on the same origin, like
 GitHub Pages. Only Flappy's URL in the served `games.json` is rewritten; no tracked
 manifest is changed and no substitute cabinet is used. The sibling-game
@@ -137,8 +147,8 @@ npm run test:smoke
 ```
 
 This baseline uses actual responses from
-<https://filmgirl.github.io/arcade/#game/flappy-copilot> and
-<https://filmgirl.github.io/flappy-copilot/>, with no mocks. To additionally require
+<https://jdooley-clt.github.io/arcade/#game/flappy-copilot> and
+<https://jdooley-clt.github.io/flappy-copilot/>, with no mocks. To additionally require
 the current `dist/index.html` to be the published version, run
 `SMOKE_EXPECT_CANDIDATE=1 npm run test:smoke`. Local smoke runs do not retry whole
 tests. The public baseline is intentionally separate from the deterministic
