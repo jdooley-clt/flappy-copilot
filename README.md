@@ -89,7 +89,7 @@ in `playwright-report/`; inspect with `npx playwright show-report`.
 ### Cabinet pin maintenance
 
 The disposable ignored checkout is `.cache/cabinet`, pinned to
-`18b9d013a9591c9d97348f21023f875eb2a7630b`. Setup fetches exactly this commit;
+`cdbd39c365f5daf50f47d06d10644d61d1572aaf`. Setup fetches exactly this commit;
 the server rejects a different or dirty checkout. CI checks out the same full
 SHA with credentials persistence disabled.
 

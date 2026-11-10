@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
-export const cabinetSha = '18b9d013a9591c9d97348f21023f875eb2a7630b';
+export const cabinetSha = 'cdbd39c365f5daf50f47d06d10644d61d1572aaf';
 export const cabinetRoot = resolve('.cache/cabinet');
 export const port = Number(process.env.CABINET_PORT || 4262);
 export const origin = `http://127.0.0.1:${port}`;

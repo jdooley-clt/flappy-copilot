@@ -18,7 +18,7 @@ test('serves the real pinned cabinet with only this game URL rewritten', async (
   const original = JSON.parse(await readFile(`${cabinetRoot}/games.json`, 'utf8'));
   original.find((game) => game.id === 'flappy-copilot').url = '/flappy-copilot/';
   expect(await (await request.get('/arcade/games.json')).json()).toEqual(original);
-  for (const file of ['index.html', 'styles.css', 'src/app.js', 'src/catalog.js']) {
+  for (const file of ['index.html', 'styles.css', 'src/app.js', 'src/catalog.js', 'src/theme.js']) {
     expect(await (await request.get(`/arcade/${file}`)).text())
       .toBe(await readFile(`${cabinetRoot}/${file}`, 'utf8'));
   }
@@ -84,7 +84,7 @@ test('canvas fits narrow widths, touch works, and resizing preserves the game', 
 });
 
 test('switching games removes the old browsing context', async ({ page }) => {
-  await page.route('https://filmgirl.github.io/mona-maze/**', (route) => route.fulfill({
+  await page.route('https://jdooley-clt.github.io/mona-maze/**', (route) => route.fulfill({
     status: 200,
     contentType: 'text/html',
     body: '<!doctype html><title>Mona Maze</title>',
@@ -93,7 +93,7 @@ test('switching games removes the old browsing context', async ({ page }) => {
   const oldFrame = await readyGame(page, candidate);
   // Use the cabinet's real hash router and unchanged sibling URL.
   await page.evaluate(() => { location.hash = 'game/mona-maze'; });
-  await expect(page.locator('#frame-host iframe')).toHaveAttribute('src', 'https://filmgirl.github.io/mona-maze/');
+  await expect(page.locator('#frame-host iframe')).toHaveAttribute('src', 'https://jdooley-clt.github.io/mona-maze/');
   expect(oldFrame.isDetached()).toBe(true);
   await expect(page.locator('iframe')).toHaveCount(1);
   await page.locator('#return-button').click();
