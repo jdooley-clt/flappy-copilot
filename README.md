@@ -13,9 +13,14 @@ Original repository:
 
 ## Controls
 - `SPACE` / click / tap — flap
+- `P` or the **Pause** button — pause and resume, in any state, without penalty
 - `M` — mute
 
 Dodge the git branch lines, collect commits, avoid merge conflicts.
+
+A visually hidden live region announces run start, score, pause and resume,
+mute, and game over for assistive technology. With `prefers-reduced-motion`
+the idle bobbing, star drift, and crash shake stop; gameplay is unchanged.
 
 ## Develop and test in the Commit Cabinet
 
@@ -79,9 +84,25 @@ only, no inline scripts or styles, `base-uri 'none'`, `form-action 'none'`,
 asserts the policy is the one in `tests/helpers.js` and that zero
 `securitypolicyviolation` events fire in any frame while launching, playing,
 reloading, and returning. `tests/a11y.spec.js` runs `@axe-core/playwright` on the
-start screen, a live run, and the game-over screen, standalone and inside the
-cabinet, in both light and dark themes; any `serious` or `critical` violation
-fails the gate, and an injected empty link proves the gate catches one.
+start screen, a live run, a paused run, and the game-over screen, standalone and
+inside the cabinet, in both light and dark themes. Standalone, a violation of any
+impact fails the gate; inside the cabinet, `serious` and `critical` violations
+anywhere on the page and violations of any impact inside the game frame fail it,
+while the cabinet shell's own findings belong to the arcade repository. Injected
+violations prove the gate catches them.
+
+### Payload budget
+
+`tests/budget.spec.js` measures the staged `dist/` (text files normalized to LF,
+gzip summed per file, as a static host serves them) and fails when the raw or
+gzipped total grows more than 10% above `tests/payload-baseline.json`, or when
+the set of published files changes. When a larger payload is intended, record a
+new baseline from a fresh build and commit it with the change:
+
+```sh
+npm run build
+npm run payload:baseline
+```
 
 To prove a broken candidate cannot pass:
 
@@ -112,6 +133,9 @@ negative controls again. Keep the source-byte/catalog assertions and real
 interaction assertions; do not patch the fixture to hide a regression.
 
 ## Deployment gate and live smoke
+
+Direct pushes to `main` are blocked; changes land through pull requests that
+pass **Cabinet compatibility**.
 
 **One-time administrator migration is still required.** At implementation time,
 Pages used legacy branch publishing from `main` `/`, and `main` had no branch

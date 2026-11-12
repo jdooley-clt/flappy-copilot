@@ -1,10 +1,18 @@
 'use strict';
 const arcadeLink = document.querySelector('.arcade-link');
+const pauseButton = document.getElementById('pause-button');
+const liveRegion = document.getElementById('status');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 if (window.self === window.top) {
   document.body.classList.add('standalone');
   arcadeLink.hidden = false;
 }
 arcadeLink.addEventListener('keydown', (e) => e.stopPropagation());
+// Space and Enter activate the button natively; the other game keys must not leak through
+// to the game while it has focus. P and M are page-wide shortcuts and keep bubbling.
+pauseButton.addEventListener('keydown', (e) => {
+  if (e.code !== 'KeyP' && e.code !== 'KeyM') e.stopPropagation();
+});
 const cvs = document.getElementById('game');
 const ctx = cvs.getContext('2d');
 const W = 480, H = 640, GROUND_H = 64;
@@ -86,10 +94,29 @@ const sfx = {
 /* ---- game state ---- */
 const BIRD_X = 130, PIPE_W = 72, GAP = 175, SPEED = 2.6, SPAWN_EVERY = 92;
 let state = 'menu';           // menu | play | dead
+let paused = false;           // freezes every state without changing it
 let frame = 0, deadT = 0, shakeT = 0;
 let bird, pipes, particles, stars, groundCells, score, best;
 
 best = parseInt(localStorage.getItem('flappy-copilot-best') || '0', 10);
+
+function announce(message) {
+  liveRegion.textContent = message;
+}
+
+function setPaused(value) {
+  if (paused === value) return;
+  paused = value;
+  pauseButton.textContent = paused ? 'Resume' : 'Pause';
+  // Resuming hands the keyboard back to the game, so Space flaps instead of toggling the button.
+  if (!paused && document.activeElement === pauseButton) pauseButton.blur();
+  announce(paused ? 'Paused' : 'Resumed');
+}
+
+// Blinking prompts hold steady and decorative motion stops when the player asks for less motion.
+function blinkOn() {
+  return reducedMotion.matches || Math.floor(frame / 30) % 2 === 0;
+}
 
 function resetWorld() {
   bird = { y: H / 2 - 40, vy: 0 };
@@ -121,9 +148,10 @@ resetWorld();
 initStars();
 
 function flap() {
-  if (state === 'menu') { state = 'play'; resetWorld(); }
+  if (paused) setPaused(false);
+  if (state === 'menu') { state = 'play'; resetWorld(); announce('Run started'); }
   if (state === 'dead') {
-    if (deadT > 30) { state = 'play'; resetWorld(); }
+    if (deadT > 30) { state = 'play'; resetWorld(); announce('Run started'); }
     return;
   }
   bird.vy = -7.8;
@@ -140,20 +168,25 @@ function flap() {
 function die() {
   state = 'dead';
   deadT = 0;
-  shakeT = 16;
+  shakeT = reducedMotion.matches ? 0 : 16;
   sfx.die();
-  if (score > best) {
+  const record = score > best;
+  if (record) {
     best = score;
     localStorage.setItem('flappy-copilot-best', String(best));
   }
+  announce(`Game over. Score ${score}. Best ${best}.${record ? ' New record.' : ''}`);
 }
 
 /* ---- update ---- */
 function update() {
+  if (paused) return;
   frame++;
-  for (const st of stars) {
-    st.x -= st.v * (state === 'play' ? 1.6 : 0.5);
-    if (st.x < -4) { st.x = W + 4; st.y = Math.random() * (H - GROUND_H); }
+  if (!reducedMotion.matches) {
+    for (const st of stars) {
+      st.x -= st.v * (state === 'play' ? 1.6 : 0.5);
+      if (st.x < -4) { st.x = W + 4; st.y = Math.random() * (H - GROUND_H); }
+    }
   }
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
@@ -163,7 +196,7 @@ function update() {
   if (shakeT > 0) shakeT--;
 
   if (state === 'menu') {
-    bird.y = H / 2 - 40 + Math.sin(frame / 22) * 10;
+    bird.y = H / 2 - 40 + (reducedMotion.matches ? 0 : Math.sin(frame / 22) * 10);
     return;
   }
   if (state === 'dead') { deadT++; return; }
@@ -198,6 +231,7 @@ function update() {
       p.passed = true;
       score++;
       sfx.score();
+      announce(`Score ${score}`);
     }
     if (p.x + PIPE_W < -20) pipes.splice(i, 1);
   }
@@ -241,6 +275,20 @@ function cornerBrackets() {
     ctx.lineTo(x, y + L * sy);
     ctx.stroke();
   }
+}
+/* CRT vignette: an ellipse through the canvas corners, clear to 62% of the way out and
+   rgba(1,4,9,0.45) at the corners. It is painted over the scene but under every line of text,
+   so the corner HUD and captions keep their full palette contrast. */
+const VIGNETTE_R = W / Math.SQRT2;
+const vignette = ctx.createRadialGradient(W / 2, W / 2, VIGNETTE_R * 0.62, W / 2, W / 2, VIGNETTE_R);
+vignette.addColorStop(0, 'rgba(1,4,9,0)');
+vignette.addColorStop(1, 'rgba(1,4,9,0.45)');
+function drawVignette() {
+  ctx.save();
+  ctx.scale(1, H / W);
+  ctx.fillStyle = vignette;
+  ctx.fillRect(-10, -10, W + 20, W + 20);
+  ctx.restore();
 }
 function trafficDots(x, y) {
   const dots = [COL.dotR, COL.dotY, COL.dotG];
@@ -313,8 +361,11 @@ function drawGround() {
       ctx.fillRect(c * 16 - off + 2, gy + 8 + r * 18, 12, 12);
     }
   }
+}
+function drawGroundCaptions() {
+  const gy = H - GROUND_H;
   text('~/MonasRepo [⎇ main]', 10, gy + 46, 12, COL.dim);
-  text(muted ? 'M unmute' : 'M mute', W - 10, gy + 46, 12, COL.dim, 'right');
+  text('P pause · ' + (muted ? 'M unmute' : 'M mute'), W - 10, gy + 46, 12, COL.dim, 'right');
 }
 function drawHUD() {
   text('● commits: ' + score, 16, 16, 16, COL.blue);
@@ -334,7 +385,7 @@ function drawMenu() {
   blockyTitle('COPILOT', cx, 196, 64);
   text('a retro terminal game', cx, 268, 14, COL.dim, 'center');
 
-  drawSprite(cx, 360, 6, Math.sin(frame / 26) * 0.08);
+  drawSprite(cx, 360, 6, reducedMotion.matches ? 0 : Math.sin(frame / 26) * 0.08);
 
   text('● Connected to GitHub MCP Server', 96, 442, 14, COL.text);
   text('● Logged in as user: MonaLisa', 96, 466, 14, COL.text);
@@ -345,16 +396,15 @@ function drawMenu() {
   // prompt line with blinking cursor
   const prompt = '> press SPACE to flap';
   text(prompt, cx, 512, 16, COL.green, 'center');
-  if (Math.floor(frame / 30) % 2 === 0) {
+  if (blinkOn()) {
     const pw = ctx.measureText(prompt).width;
     ctx.fillStyle = COL.green;
     ctx.fillRect(cx + pw / 2 + 6, 512, 10, 17);
   }
   text('avoid the merge conflicts · collect commits', cx, 544, 12, COL.dim, 'center');
 }
-function drawDead() {
-  if (deadT < 20) return;
-  const px = 60, py = 170, pw = W - 120, ph = 250;
+function terminalPanel(py, ph, title) {
+  const px = 60, pw = W - 120;
   ctx.fillStyle = 'rgba(1,4,9,0.55)';
   ctx.fillRect(0, 0, W, H - GROUND_H);
   ctx.fillStyle = COL.panel;
@@ -365,21 +415,32 @@ function drawDead() {
   ctx.fillStyle = COL.panelSoft;
   ctx.fillRect(px, py, pw, 26);
   trafficDots(px + 10, py + 9);
-  text('zsh — merge-conflict', px + 58, py + 6, 13, COL.dim);
+  text(title, px + 58, py + 6, 13, COL.dim);
+}
+function drawDead() {
+  if (deadT < 20) return;
+  const py = 170;
+  terminalPanel(py, 250, 'zsh — merge-conflict');
 
   text('MERGE CONFLICT!', W / 2, py + 48, 26, COL.red, 'center', 'bold');
   text('you hit a breaking change', W / 2, py + 86, 14, COL.text, 'center');
   text('commits this run: ' + score, W / 2, py + 122, 15, COL.blue, 'center');
   text('best: ' + best + (score >= best && score > 0 ? '  ★ new record!' : ''), W / 2, py + 146, 15, COL.purple, 'center');
-  if (Math.floor(frame / 30) % 2 === 0) {
+  if (blinkOn()) {
     text('> press SPACE to resolve', W / 2, py + 192, 15, COL.green, 'center');
   }
+}
+function drawPaused() {
+  const py = 236;
+  terminalPanel(py, 140, 'zsh — paused');
+  text('PAUSED', W / 2, py + 48, 26, COL.white, 'center', 'bold');
+  text('> press P or SPACE to resume', W / 2, py + 96, 15, COL.green, 'center');
 }
 
 /* ---- main draw ---- */
 function draw() {
   ctx.save();
-  if (shakeT > 0) {
+  if (shakeT > 0 && !paused) {
     ctx.translate((Math.random() - 0.5) * shakeT, (Math.random() - 0.5) * shakeT);
   }
   ctx.fillStyle = COL.bg;
@@ -408,10 +469,13 @@ function draw() {
   }
 
   drawGround();
+  drawVignette();
+  drawGroundCaptions();
 
   if (state === 'menu') drawMenu();
   if (state === 'play') drawHUD();
   if (state === 'dead') { drawHUD(); drawDead(); }
+  if (paused) drawPaused();
 
   ctx.restore();
 }
@@ -428,12 +492,21 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
     e.preventDefault();
     flap();
-  } else if (e.code === 'KeyM') {
+  } else if (e.code === 'KeyM' && !e.repeat) {
     muted = !muted;
+    announce(muted ? 'Audio muted' : 'Audio unmuted');
+  } else if (e.code === 'KeyP' && !e.repeat) {
+    setPaused(!paused);
   }
+});
+pauseButton.addEventListener('click', () => setPaused(!paused));
+// Playing is never penalised for stepping away: a hidden tab pauses the live run and waits.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && state === 'play') setPaused(true);
 });
 cvs.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   arcadeLink.blur();
+  pauseButton.blur();
   flap();
 });

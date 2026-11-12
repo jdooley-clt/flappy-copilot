@@ -118,11 +118,16 @@ export async function expectPipesAdvance(page, frame) {
     .toBe(true);
 }
 
+// The canvas keeps its 3:4 shape inside the viewport, with the title above it and the
+// controls row below it both fully visible.
 export async function canvasFits(frame) {
   const bounds = await frame.locator('#game').evaluate((canvas) => {
     const rect = canvas.getBoundingClientRect();
+    const title = document.querySelector('h1').getBoundingClientRect();
+    const hint = document.querySelector('.hint').getBoundingClientRect();
     return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom,
-      width: rect.width, height: rect.height, viewportWidth: innerWidth, viewportHeight: innerHeight };
+      width: rect.width, height: rect.height, viewportWidth: innerWidth, viewportHeight: innerHeight,
+      titleTop: title.top, titleBottom: title.bottom, hintTop: hint.top, hintBottom: hint.bottom };
   });
   expect(bounds.width).toBeGreaterThan(100);
   expect(bounds.height).toBeGreaterThan(100);
@@ -131,4 +136,8 @@ export async function canvasFits(frame) {
   expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth + 1);
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportHeight + 1);
   expect(bounds.width / bounds.height).toBeCloseTo(3 / 4, 2);
+  expect(bounds.titleTop).toBeGreaterThanOrEqual(-1);
+  expect(bounds.titleBottom).toBeLessThanOrEqual(bounds.y + 1);
+  expect(bounds.hintTop).toBeGreaterThanOrEqual(bounds.bottom - 1);
+  expect(bounds.hintBottom).toBeLessThanOrEqual(bounds.viewportHeight + 1);
 }

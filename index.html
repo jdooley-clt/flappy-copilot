@@ -10,16 +10,19 @@
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <div class="page-title">~/MonasRepo [⎇ main] — flappy-copilot.exe</div>
-  <div id="wrap">
-    <canvas id="game" width="480" height="640"></canvas>
-    <div class="scanlines"></div>
-    <div class="vignette"></div>
-  </div>
-  <div class="hint">
-    <span><b>SPACE</b> / click to flap · <b>M</b> mute · Ctrl+c Exit</span>
-    <a class="arcade-link" href="https://jdooley-clt.github.io/arcade/" hidden>GitHub Arcade</a>
-  </div>
+  <main>
+    <h1 class="page-title">~/MonasRepo [⎇ main] — flappy-copilot.exe</h1>
+    <div id="wrap">
+      <canvas id="game" width="480" height="640"></canvas>
+      <div class="scanlines"></div>
+    </div>
+    <div class="hint">
+      <span><b>SPACE</b> / click to flap · <b>P</b> pause · <b>M</b> mute · Ctrl+c Exit</span>
+      <button id="pause-button" class="pause-button" type="button" aria-keyshortcuts="P">Pause</button>
+      <a class="arcade-link" href="https://jdooley-clt.github.io/arcade/" hidden>GitHub Arcade</a>
+    </div>
+    <p id="status" class="visually-hidden" role="status"></p>
+  </main>
 
 <script src="./src/main.js"></script>
 </body>
