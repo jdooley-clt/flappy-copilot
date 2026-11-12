@@ -72,6 +72,28 @@ for (const launch of ['mouse', 'keyboard']) {
   });
 }
 
+test('P and the pause button freeze a live run inside the cabinet, and Space resumes it', async ({ page }) => {
+  await page.getByRole('button', { name: 'Play Flappy Copilot', exact: true }).click();
+  const frame = await readyGame(page, candidate);
+  await startWithSpace(page, frame);
+  await page.keyboard.press('p');
+  await expect.poll(() => frame.evaluate(() => paused)).toBe(true);
+  await expect(frame.getByRole('status')).toHaveText('Paused');
+  const held = await frame.evaluate(() => ({ frame, y: bird.y, state }));
+  await page.waitForTimeout(150);
+  expect(await frame.evaluate(() => ({ frame, y: bird.y, state }))).toEqual(held);
+  await expect(page.locator('#frame-host iframe')).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect.poll(() => frame.evaluate(() => paused)).toBe(false);
+  await expectSpaceReachesGame(page, frame);
+
+  await frame.getByRole('button', { name: 'Pause', exact: true }).click();
+  await expect.poll(() => frame.evaluate(() => paused)).toBe(true);
+  await frame.getByRole('button', { name: 'Resume', exact: true }).click();
+  await expect.poll(() => frame.evaluate(() => paused)).toBe(false);
+  await expectSpaceReachesGame(page, frame);
+});
+
 test('canvas fits narrow widths, touch works, and resizing preserves the game', async ({ page, isMobile }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await page.getByRole('button', { name: 'Play Flappy Copilot', exact: true }).click();

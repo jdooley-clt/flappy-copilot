@@ -1,0 +1,10 @@
+{
+  "raw": 22513,
+  "gzip": 8431,
+  "files": {
+    "index.html": 1331,
+    "src/main.js": 16525,
+    "src/theme.js": 265,
+    "style.css": 4392
+  }
+}
