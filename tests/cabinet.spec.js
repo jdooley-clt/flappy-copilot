@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
-import { test, expect, readyGame, startWithSpace, canvasFits } from './helpers.js';
+import {
+  test, expect, readyGame, startWithSpace, canvasFits, expectCspMeta, expectSpaceReachesGame, expectPipesAdvance,
+} from './helpers.js';
 import { cabinetRoot, cabinetSha, origin } from '../scripts/cabinet.mjs';
 
 const candidate = `${origin}/flappy-copilot/`;
@@ -24,6 +26,12 @@ test('serves the real pinned cabinet with only this game URL rewritten', async (
   }
 });
 
+test('serves every published game asset from the build output', async ({ request }) => {
+  for (const file of ['style.css', 'src/theme.js', 'src/main.js']) {
+    expect(await (await request.get(`${candidate}${file}`)).text()).toBe(await readFile(`dist/${file}`, 'utf8'));
+  }
+});
+
 for (const launch of ['mouse', 'keyboard']) {
   test(`${launch} launch gives Space and M to the game; reload and return clean up`, async ({ page }) => {
     const card = page.getByRole('button', { name: 'Play Flappy Copilot', exact: true });
@@ -35,26 +43,22 @@ for (const launch of ['mouse', 'keyboard']) {
     const frame = await readyGame(page, candidate);
     await expect(page.locator('#frame-host iframe')).toHaveAttribute(
       'sandbox', 'allow-scripts allow-same-origin allow-pointer-lock');
+    await expectCspMeta(frame);
     await expect(frame.getByRole('link', { name: 'GitHub Arcade', includeHidden: true })).toBeHidden();
     expect(await frame.locator('body').evaluate((body) => body.classList.contains('standalone'))).toBe(false);
     await startWithSpace(page, frame);
-    for (let i = 0; i < 2; i++) {
-      await frame.waitForFunction(() => state === 'play' && bird.y >= 270 && bird.vy > 0);
-      await page.keyboard.press('Space');
-      await expect.poll(() => frame.evaluate(() => bird.vy)).toBeLessThan(0);
-      expect(await frame.evaluate(() => state)).toBe('play');
-    }
-    await expect.poll(() => frame.evaluate(() => pipes.length)).toBeGreaterThan(0);
-    const pipeX = await frame.evaluate(() => pipes[0].x);
-    await expect.poll(() => frame.evaluate(() => pipes[0].x)).toBeLessThan(pipeX);
+    // Inputs must reach the game whether or not the bird survives the randomly placed pipes.
+    for (let i = 0; i < 2; i++) await expectSpaceReachesGame(page, frame);
+    await expectPipesAdvance(page, frame);
     await page.keyboard.press('m');
-    expect(await frame.evaluate(() => muted)).toBe(true);
+    await expect.poll(() => frame.evaluate(() => muted)).toBe(true);
     await page.keyboard.press('m');
-    expect(await frame.evaluate(() => muted)).toBe(false);
+    await expect.poll(() => frame.evaluate(() => muted)).toBe(false);
 
     await page.locator('#reload-game').click();
     await expect.poll(() => frame.isDetached()).toBe(true);
     const reloaded = await readyGame(page, candidate);
+    await expectCspMeta(reloaded);
     await startWithSpace(page, reloaded);
     await page.locator('#return-button').click();
     await expect(page.locator('iframe')).toHaveCount(0);
@@ -63,6 +67,7 @@ for (const launch of ['mouse', 'keyboard']) {
     await page.keyboard.press('Enter');
     const relaunched = await readyGame(page, candidate);
     expect(relaunched).not.toBe(reloaded);
+    await expectCspMeta(relaunched);
     await startWithSpace(page, relaunched);
   });
 }

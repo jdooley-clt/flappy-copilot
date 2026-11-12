@@ -1,23 +1,35 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 
-const original = await readFile('dist/index.html', 'utf8');
+// Each control corrupts one published file in a way the compatibility gate must reject.
 const cases = [
   {
     name: 'startup',
+    file: 'dist/src/main.js',
     marker: 'negative-control-startup',
-    html: original.replace("'use strict';", "'use strict'; throw new Error('negative-control-startup');"),
+    patch: (source) => source.replace("'use strict';", "'use strict'; throw new Error('negative-control-startup');"),
   },
   {
     name: 'asset',
+    file: 'dist/index.html',
     marker: 'missing-required-asset.js',
-    html: original.replace('</head>', '<script src="./missing-required-asset.js"></script></head>'),
+    patch: (source) => source.replace('</head>', '<script src="./missing-required-asset.js"></script></head>'),
+  },
+  {
+    // An inline script must be refused by the Content Security Policy and fail the gate.
+    name: 'inline-script',
+    file: 'dist/index.html',
+    marker: 'Content Security Policy',
+    patch: (source) => source.replace('</head>', '<script>window.negativeControlInline = true;</script></head>'),
   },
 ];
 await mkdir('.cache/negative-controls', { recursive: true });
-try {
-  for (const control of cases) {
-    await writeFile('dist/index.html', control.html);
+for (const control of cases) {
+  const original = await readFile(control.file, 'utf8');
+  const patched = control.patch(original);
+  if (patched === original) throw new Error(`Negative control ${control.name} did not change ${control.file}.`);
+  try {
+    await writeFile(control.file, patched);
     const result = spawnSync(process.execPath, [
       'node_modules/@playwright/test/cli.js', 'test',
       '--project=desktop-chromium', '--grep=mouse launch', '--timeout=10000',
@@ -30,7 +42,7 @@ try {
       throw new Error(`Negative control ${control.name} did not fail as expected:\n${log}`);
     }
     console.log(`PASS: broken candidate ${control.name} rejected (${control.marker}).`);
+  } finally {
+    await writeFile(control.file, original);
   }
-} finally {
-  await writeFile('dist/index.html', original);
 }
