@@ -26,6 +26,7 @@ test('standalone chrome fits desktop, narrow portrait, and landscape without ove
     await page.setViewportSize(viewport);
     await canvasFits(page.mainFrame());
     await expect(page.getByRole('heading', { level: 1, name: /flappy-copilot\.exe/ })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Flappy Copilot game', exact: true })).toBeVisible();
     const link = page.getByRole('link', { name: 'GitHub Arcade', exact: true });
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute('href', arcadeUrl);
