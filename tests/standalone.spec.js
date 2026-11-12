@@ -1,4 +1,4 @@
-import { test, expect, canvasFits } from './helpers.js';
+import { test, expect, canvasFits, expectCspMeta, expectSpaceReachesGame } from './helpers.js';
 
 const candidate = '/flappy-copilot/';
 const arcadeUrl = 'https://jdooley-clt.github.io/arcade/';
@@ -6,6 +6,14 @@ const arcadeUrl = 'https://jdooley-clt.github.io/arcade/';
 test.beforeEach(async ({ page }) => {
   await page.goto(candidate);
   await page.waitForFunction(() => typeof state !== 'undefined' && state === 'menu' && frame > 0);
+});
+
+test('ships the Content Security Policy and referrer policy without inline code', async ({ page }) => {
+  await expectCspMeta(page.mainFrame());
+  expect(await page.locator('script:not([src]), style, [style], [onclick], [onkeydown]').count()).toBe(0);
+  for (const rel of await page.locator('a[target="_blank"]').evaluateAll((anchors) => anchors.map((a) => a.rel))) {
+    expect(rel.split(/\s+/)).toEqual(expect.arrayContaining(['noopener', 'noreferrer']));
+  }
 });
 
 test('standalone link fits desktop, narrow portrait, and landscape without overlapping the canvas', async ({ page }) => {
@@ -52,10 +60,7 @@ test('navigation focus is isolated from game input and canvas interaction restor
   else await page.locator('#game').click();
   expect(await page.evaluate(() => state)).toBe('play');
   await expect(link).not.toBeFocused();
-  await page.waitForFunction(() => state === 'play' && bird.y >= 270 && bird.vy > 0);
-  await page.keyboard.press('Space');
-  await expect.poll(() => page.evaluate(() => bird.vy)).toBeLessThan(0);
-  expect(await page.evaluate(() => state)).toBe('play');
+  await expectSpaceReachesGame(page, page.mainFrame());
 });
 
 test('Enter follows the same-tab Arcade destination', async ({ page, browserName }) => {

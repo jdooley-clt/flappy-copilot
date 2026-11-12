@@ -19,9 +19,10 @@ Dodge the git branch lines, collect commits, avoid merge conflicts.
 
 ## Develop and test in the Commit Cabinet
 
-The game remains a standalone `index.html`; Node.js 22+ is only development
-tooling. There is no runtime framework. The build copies the game into `dist/`,
-which is the only directory eligible for deployment.
+The game is a static page: `index.html`, `style.css`, and `src/theme.js` +
+`src/main.js`. Node.js 22+ is only development tooling. There is no runtime
+framework. The build copies those files into `dist/`, which is the only
+directory eligible for deployment.
 
 ```sh
 npm ci
@@ -34,7 +35,7 @@ npm run test:compat
 On Linux, install browser OS dependencies with
 `npx playwright install --with-deps chromium webkit`.
 Rebuild after changing the game: tests deliberately serve **`dist/`, not the
-source file or the already-published game**.
+source files or the already-published game**.
 
 The harness mounts the real [Commit Cabinet](https://github.com/jdooley-clt/arcade)
 at `/arcade/` and the candidate at `/flappy-copilot/` on the same origin, like
@@ -59,13 +60,28 @@ Coverage includes mouse and Enter launch, immediate and repeated Space input,
 moving pipes, M audio toggling, reload focus, return-card focus, old-frame cleanup
 on reload/switch/return, touch, 320/390px widths, landscape resizing, focus mode,
 native desktop fullscreen, and unavailable-fullscreen fallback with accessible
-exits. Standalone navigation coverage checks the Arcade link, keyboard focus,
-input isolation, and responsive sizing. The link opens in the same tab and is
-hidden inside iframes, so cabinet embeds retain their existing content and layout.
-Desktop Chromium, mobile Chromium, and mobile WebKit run without retries;
-native fullscreen is intentionally desktop-only. Uncaught errors, console
-errors, failed requests, and HTTP asset errors fail tests. Only canceled
-navigations belonging to detached iframes are excluded during teardown.
+exits. Launch-input assertions never depend on the bird surviving the randomly
+placed pipes: Space must flap a live run or restart a finished one, and pipes
+must advance during a live run, however the physics went meanwhile. Standalone
+navigation coverage checks the Arcade link, keyboard focus, input isolation, and
+responsive sizing. The link opens in the same tab and is hidden inside iframes,
+so cabinet embeds retain their existing content and layout. Desktop Chromium,
+mobile Chromium, and mobile WebKit all run; local runs never retry, CI retries a
+failed test twice (if the main run flakes: `gh run rerun <run-id> --failed`;
+deploy only happens after the gate is green). Native fullscreen is intentionally
+desktop-only. Uncaught errors, console errors, failed requests, and HTTP asset
+errors fail tests. Only canceled navigations belonging to detached iframes are
+excluded during teardown.
+
+The page ships a strict Content Security Policy as a `<meta>` tag (`'self'`
+only, no inline scripts or styles, `base-uri 'none'`, `form-action 'none'`,
+`object-src 'none'`) and `referrer: strict-origin-when-cross-origin`. Every test
+asserts the policy is the one in `tests/helpers.js` and that zero
+`securitypolicyviolation` events fire in any frame while launching, playing,
+reloading, and returning. `tests/a11y.spec.js` runs `@axe-core/playwright` on the
+start screen, a live run, and the game-over screen, standalone and inside the
+cabinet, in both light and dark themes; any `serious` or `critical` violation
+fails the gate, and an injected empty link proves the gate catches one.
 
 To prove a broken candidate cannot pass:
 
@@ -74,9 +90,10 @@ npm run test:negative
 ```
 
 This temporarily injects a startup exception, then a missing required script,
-into the ignored build output. Both must fail the desktop launch test for the
-expected reason. The original build is restored in `finally`; tracked gameplay
-and cabinet files are untouched. Logs are in `.cache/negative-controls/`.
+then an inline script the Content Security Policy must block, into the ignored
+build output. All three must fail the desktop launch test for the expected
+reason. The original build is restored in `finally`; tracked gameplay and
+cabinet files are untouched. Logs are in `.cache/negative-controls/`.
 Do not run this at the same time as another test/server using the same build.
 Normal failures retain traces/screenshots in `test-results/` and the HTML report
 in `playwright-report/`; inspect with `npx playwright show-report`.
@@ -149,3 +166,9 @@ the current `dist/index.html` to be the published version, run
 tests. The public baseline is intentionally separate from the deterministic
 candidate gate; switching-frame coverage may briefly begin loading the unchanged
 public sibling URL, but never asserts that sibling game's gameplay.
+
+## Security
+
+Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+GitHub Actions and npm dependencies are pinned and refreshed weekly by
+Dependabot (`.github/dependabot.yml`).

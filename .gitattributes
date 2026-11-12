@@ -1,0 +1,4 @@
+# Normalize line endings so builds and byte-identity checks match on every platform.
+* text=auto eol=lf
+*.svg text eol=lf
+*.png binary
